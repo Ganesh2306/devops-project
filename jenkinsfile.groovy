@@ -21,7 +21,7 @@ pipeline {
       }
     }
 
-    stage('Deploy Infrastructure') {
+    stage('Terraform Deploy') {
       steps {
         sh '''
         cd terraform
@@ -31,7 +31,7 @@ pipeline {
       }
     }
 
-    stage('Configure Server') {
+    stage('Ansible Deploy') {
       steps {
         sh '''
         cd ansible
