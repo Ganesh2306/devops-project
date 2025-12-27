@@ -22,7 +22,7 @@ pipeline {
       }
     }
 
-    stage('Terraform Deploy') {
+   stage('Terraform Deploy') {
   steps {
     sh '''
     cd terraform
@@ -32,7 +32,7 @@ pipeline {
     '''
   }
 }
-    
+  
     stage('Ansible Deploy') {
       steps {
         sh '''
