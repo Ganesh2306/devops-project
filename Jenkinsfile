@@ -23,15 +23,16 @@ pipeline {
     }
 
     stage('Terraform Deploy') {
-      steps {
-        sh '''
-        cd terraform
-        terraform init
-        terraform apply -auto-approve
-        '''
-      }
-    }
-
+  steps {
+    sh '''
+    cd terraform
+    terraform init
+    terraform plan -out=tfplan
+    terraform apply -input=false -auto-approve tfplan
+    '''
+  }
+}
+    
     stage('Ansible Deploy') {
       steps {
         sh '''
