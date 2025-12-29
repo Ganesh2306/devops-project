@@ -1,4 +1,5 @@
-- hosts: web
+- name: Configure Application Server
+  hosts: appserver
   become: yes
 
   tasks:
