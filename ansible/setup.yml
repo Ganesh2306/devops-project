@@ -1,3 +1,23 @@
+# - name: Configure Application Server
+#   hosts: appserver
+#   become: yes
+
+#   tasks:
+#     - name: Update OS packages
+#       apt:
+#         update_cache: yes
+
+#     - name: Install Nginx
+#       apt:
+#         name: nginx
+#         state: present
+
+#     - name: Start Nginx service
+#       service:
+#         name: nginx
+#         state: started
+#         enabled: yes
+
 - name: Configure Application Server
   hosts: appserver
   become: yes
@@ -17,3 +37,16 @@
         name: nginx
         state: started
         enabled: yes
+
+    - name: Copy website files from Jenkins to EC2
+      copy:
+        src: /var/lib/jenkins/workspace/devops/app/
+        dest: /var/www/html/
+        owner: www-data
+        group: www-data
+        mode: 0755
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
