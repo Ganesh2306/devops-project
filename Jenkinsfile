@@ -115,7 +115,7 @@ pipeline {
             steps {
                 dir('ansible') {
                     sh '''
-                    ansible-playbook deploy.yml
+                    ansible-playbook setup.yml
                     '''
                 }
             }
