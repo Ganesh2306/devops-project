@@ -26,88 +26,92 @@
 #   value       = aws_instance.app_server.public_ip
 # }
 
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 6.0"
+pipeline {
+    agent any
+
+    environment {
+        DOTNET_ROOT = "/usr/bin/dotnet"
     }
-  }
-}
 
-provider "aws" {
-  region = "ap-south-1"
-}
+    stages {
 
-# -------------------------------
-# Security Group
-# -------------------------------
-resource "aws_security_group" "web_sg" {
-  name        = "web-sg"
-  description = "Allow SSH, HTTP, HTTPS, All TCP (learning)"
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Ganesh2306/devops-project.git'
+            }
+        }
 
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+        stage('Restore Dependencies') {
+            steps {
+                dir('app/dotnet-app') {
+                    sh 'dotnet restore'
+                }
+            }
+        }
 
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+        stage('Build Application') {
+            steps {
+                dir('app/dotnet-app') {
+                    sh 'dotnet build --configuration Release'
+                }
+            }
+        }
 
-  ingress {
-    description = "HTTPS"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+        stage('Run Tests') {
+            steps {
+                dir('app/dotnet-app') {
+                    sh 'dotnet test'
+                }
+            }
+        }
 
-  ingress {
-    description = "All TCP (learning only)"
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+        stage('Publish App') {
+            steps {
+                dir('app/dotnet-app') {
+                    sh 'dotnet publish -c Release -o publish'
+                }
+            }
+        }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+        stage('Terraform Infrastructure') {
+            steps {
+                dir('terraform') {
 
-  tags = {
-    Name = "Web-SG"
-  }
-}
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws-creds'
+                    ]]) {
 
-# -------------------------------
-# EC2 Instance
-# -------------------------------
-resource "aws_instance" "app_server" {
-  ami                    = "ami-0f5ee92e2d63afc18"
-  instance_type          = "t2.micro"
-  key_name               = "devops-key"
-  vpc_security_group_ids = [aws_security_group.web_sg.id]
+                        sh '''
+                        terraform init
+                        terraform plan -out=tfplan
+                        terraform apply -auto-approve tfplan
+                        '''
+                    }
 
-  tags = {
-    Name = "Prod-App-Server"
-  }
-}
+                }
+            }
+        }
 
-# -------------------------------
-# Output
-# -------------------------------
-output "instance_public_ip" {
-  description = "Public IP of the EC2 instance"
-  value       = aws_instance.app_server.public_ip
+        stage('Deploy with Ansible') {
+            steps {
+                dir('ansible') {
+                    sh '''
+                    ansible-playbook deploy.yml
+                    '''
+                }
+            }
+        }
+
+    }
+
+    post {
+        success {
+            echo 'Pipeline executed successfully 🚀'
+        }
+
+        failure {
+            echo 'Pipeline failed ❌'
+        }
+    }
 }
