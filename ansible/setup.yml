@@ -66,7 +66,7 @@
 
   - name: Install .NET runtime
     apt:
-      name: dotnet-runtime-7.0
+      name: dotnet-runtime-8.0
       state: present
 
   - name: Create app directory

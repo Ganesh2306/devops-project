@@ -104,6 +104,11 @@ pipeline {
                         terraform init
                         terraform plan -out=tfplan
                         terraform apply -auto-approve tfplan
+
+                        terraform output -raw instance_public_ip > ../ansible/ip.txt
+
+                        echo "[appserver]" > ../ansible/inventory.ini
+                        echo "$(cat ../ansible/ip.txt) ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/.ssh/key.pem" >> ../ansible/inventory.ini
                         '''
                     }
 
@@ -121,7 +126,7 @@ pipeline {
             steps {
                 dir('ansible') {
                     sh '''
-                    ansible-playbook setup.yml
+                    ansible-playbook -i inventory.ini setup.yml
                     '''
                 }
             }
