@@ -48,7 +48,7 @@ pipeline {
     agent any
 
     environment {
-        DOTNET_ROOT = "/usr/bin/dotnet"
+        DOTNET_ROOT = "/usr/share/dotnet"
     }
 
     stages {
@@ -110,6 +110,12 @@ pipeline {
                 }
             }
         }
+        stage('Check Dotnet') {
+            steps {
+                sh 'dotnet --version'
+            }
+        }
+
 
         stage('Deploy with Ansible') {
             steps {
