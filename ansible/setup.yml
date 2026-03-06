@@ -18,35 +18,71 @@
 #         state: started
 #         enabled: yes
 
+# 5/3/26 change
+
+# - name: Configure Application Server
+#   hosts: appserver
+#   become: yes
+
+#   tasks:
+#     - name: Update OS packages
+#       apt:
+#         update_cache: yes
+
+#     - name: Install Nginx
+#       apt:
+#         name: nginx
+#         state: present
+
+#     - name: Start Nginx service
+#       service:
+#         name: nginx
+#         state: started
+#         enabled: yes
+
+#     - name: Copy website files from Jenkins to EC2
+#       copy:
+#         src: /var/lib/jenkins/workspace/devops/app/
+#         dest: /var/www/html/
+#         owner: www-data
+#         group: www-data
+#         mode: 0755
+
+#     - name: Restart Nginx
+#       service:
+#         name: nginx
+#         state: restarted
+
 - name: Configure Application Server
   hosts: appserver
   become: yes
 
   tasks:
-    - name: Update OS packages
-      apt:
-        update_cache: yes
 
-    - name: Install Nginx
-      apt:
-        name: nginx
-        state: present
+  - name: Update apt packages
+    apt:
+      update_cache: yes
 
-    - name: Start Nginx service
-      service:
-        name: nginx
-        state: started
-        enabled: yes
+  - name: Install dotnet runtime
+    apt:
+      name: dotnet-runtime-7.0
+      state: present
 
-    - name: Copy website files from Jenkins to EC2
-      copy:
-        src: /var/lib/jenkins/workspace/devops/app/
-        dest: /var/www/html/
-        owner: www-data
-        group: www-data
-        mode: 0755
+  - name: Create app directory
+    file:
+      path: /var/www/dotnetapp
+      state: directory
+      mode: '0755'
 
-    - name: Restart Nginx
-      service:
-        name: nginx
-        state: restarted
+  - name: Copy published .NET app from Jenkins
+    copy:
+      src: /var/lib/jenkins/workspace/devops-project/app/dotnet-app/publish/
+      dest: /var/www/dotnetapp/
+      owner: ubuntu
+      group: ubuntu
+      mode: '0755'
+
+  - name: Run .NET application
+    shell: |
+      pkill dotnet || true
+      nohup dotnet /var/www/dotnetapp/dotnet-app.dll > /dev/null 2>&1 &
