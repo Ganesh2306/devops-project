@@ -45,76 +45,91 @@
 // }
 
 pipeline {
-
     agent any
 
     environment {
-        DOTNET_ROOT = "/usr/share/dotnet"
+        DOTNET_ROOT = "/usr/bin/dotnet"
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                url: 'https://github.com/Ganesh2306/devops-project.git'
+                git branch: 'main', url: 'https://github.com/Ganesh2306/devops-project.git'
             }
         }
 
         stage('Restore Dependencies') {
             steps {
-                sh '''
-                cd app/dotnet-app
-                dotnet restore
-                '''
+                dir('app/dotnet-app') {
+                    sh 'dotnet restore'
+                }
             }
         }
 
         stage('Build Application') {
             steps {
-                sh '''
-                cd app/dotnet-app
-                dotnet build --configuration Release
-                '''
+                dir('app/dotnet-app') {
+                    sh 'dotnet build --configuration Release'
+                }
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh '''
-                cd app/dotnet-app
-                dotnet test || true
-                '''
+                dir('app/dotnet-app') {
+                    sh 'dotnet test'
+                }
             }
         }
 
         stage('Publish App') {
             steps {
-                sh '''
-                cd app/dotnet-app
-                dotnet publish -c Release -o publish
-                '''
+                dir('app/dotnet-app') {
+                    sh 'dotnet publish -c Release -o publish'
+                }
             }
         }
 
         stage('Terraform Infrastructure') {
             steps {
-                sh '''
-                cd terraform
-                terraform init
-                terraform plan -out=tfplan
-                terraform apply -auto-approve tfplan
-                '''
+                dir('terraform') {
+
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws-creds'
+                    ]]) {
+
+                        sh '''
+                        terraform init
+                        terraform plan -out=tfplan
+                        terraform apply -auto-approve tfplan
+                        '''
+                    }
+
+                }
             }
         }
 
         stage('Deploy with Ansible') {
             steps {
-                sh '''
-                cd ansible
-                ansible-playbook -i inventory.ini setup.yml
-                '''
+                dir('ansible') {
+                    sh '''
+                    ansible-playbook deploy.yml
+                    '''
+                }
             }
+        }
+
+    }
+
+    post {
+        success {
+            echo 'Pipeline executed successfully 🚀'
+        }
+
+        failure {
+            echo 'Pipeline failed ❌'
         }
     }
 }
