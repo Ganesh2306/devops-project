@@ -53,37 +53,85 @@
 #         name: nginx
 #         state: restarted
 
----
-- name: Configure Application Server
-  hosts: appserver
+# ---
+# - name: Configure Application Server
+#   hosts: appserver
+#   become: yes
+
+#   tasks:
+
+#   - name: Update apt packages
+#     apt:
+#       update_cache: yes
+
+#   - name: Install .NET runtime
+#     apt:
+#       name: dotnet-runtime-8.0
+#       state: present
+
+#   - name: Create app directory
+#     file:
+#       path: /var/www/dotnetapp
+#       state: directory
+#       mode: '0755'
+
+#   - name: Copy published app
+#     copy:
+#       src: ../app/dotnet-app/publish/
+#       dest: /var/www/dotnet-app/
+#       owner: ubuntu
+#       group: ubuntu
+#       mode: '0755'
+
+#   - name: Run application
+#     shell: |
+#       pkill dotnet || true
+#       nohup dotnet /var/www/dotnet-app/dotnet-app.dll > app.log 2>&1 &
+
+- hosts: appserver
   become: yes
 
   tasks:
 
-  - name: Update apt packages
-    apt:
-      update_cache: yes
+    - name: Update apt packages
+      apt:
+        update_cache: yes
 
-  - name: Install .NET runtime
-    apt:
-      name: dotnet-runtime-8.0
-      state: present
+    - name: Install prerequisites
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - wget
+          - gnupg
+        state: present
 
-  - name: Create app directory
-    file:
-      path: /var/www/dotnetapp
-      state: directory
-      mode: '0755'
+    - name: Add Microsoft package repository
+      shell: |
+        wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+        dpkg -i packages-microsoft-prod.deb
 
-  - name: Copy published app
-    copy:
-      src: ../app/dotnet-app/publish/
-      dest: /var/www/dotnet-app/
-      owner: ubuntu
-      group: ubuntu
-      mode: '0755'
+    - name: Update apt cache
+      apt:
+        update_cache: yes
 
-  - name: Run application
-    shell: |
-      pkill dotnet || true
-      nohup dotnet /var/www/dotnet-app/dotnet-app.dll > app.log 2>&1 &
+    - name: Install .NET runtime
+      apt:
+        name: aspnetcore-runtime-8.0
+        state: present
+
+    - name: Create app directory
+      file:
+        path: /var/www/dotnet-app
+        state: directory
+
+    - name: Copy published app
+      copy:
+        src: ../app/dotnet-app/publish/
+        dest: /var/www/dotnet-app/
+
+    - name: Run application
+      shell: |
+        pkill dotnet || true
+        cd /var/www/dotnet-app
+        nohup dotnet dotnet-app.dll --urls "http://0.0.0.0:80" > app.log 2>&1 &      
