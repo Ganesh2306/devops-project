@@ -118,6 +118,14 @@ pipeline {
                         echo "[appserver]" > inventory.ini
                         echo "$IP ansible_user=ubuntu" >> inventory.ini
 
+                        echo "Waiting for EC2 SSH..."
+
+                        until ssh -o StrictHostKeyChecking=no ubuntu@$IP "echo SSH ready" 2>/dev/null
+                        do
+                        echo "Waiting for SSH..."
+                        sleep 5
+                        done
+
                         ansible-playbook -i inventory.ini setup.yml
                         '''
                     }
