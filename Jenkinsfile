@@ -108,7 +108,7 @@ pipeline {
                         terraform output -raw instance_public_ip > ../ansible/ip.txt
 
                         echo "[appserver]" > ../ansible/inventory.ini
-                        echo "$(cat ../ansible/ip.txt) ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/.ssh/key.pem" >> ../ansible/inventory.ini
+                        echo "$(cat ../ansible/ip.txt) ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/id_rsa" >> ../ansible/inventory.ini
                         '''
                     }
 
