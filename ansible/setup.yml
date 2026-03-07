@@ -77,10 +77,13 @@
 
   - name: Copy published app
     copy:
-      src: /var/lib/jenkins/workspace/devops-dotnet-pipeline/app/dotnet-app/publish/
-      dest: /var/www/dotnetapp/
+      src: ../app/dotnet-app/publish/
+      dest: /var/www/dotnet-app/
+      owner: ubuntu
+      group: ubuntu
+      mode: '0755'
 
   - name: Run application
     shell: |
       pkill dotnet || true
-      nohup dotnet /var/www/dotnetapp/dotnet-app.dll --urls=http://0.0.0.0:80 > /dev/null 2>&1 &
+      nohup dotnet /var/www/dotnet-app/dotnet-app.dll > app.log 2>&1 &
